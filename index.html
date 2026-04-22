@@ -1,0 +1,1535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Development Portal</title>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            navy: { 50:'#EEF2F7', 100:'#D5E1EE', 200:'#AABDDB', 300:'#7F99C8', 400:'#5475B5', 500:'#2D6A9F', 600:'#1B3A5C', 700:'#142D48', 800:'#0D2034', 900:'#061020' },
+            teal: { 50:'#E6FAF8', 100:'#CCEFED', 200:'#99DDD9', 300:'#66CCB6', 400:'#33BAA3', 500:'#0D9488', 600:'#0B7A72', 700:'#09605B', 800:'#074644', 900:'#042C2C' },
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #F8FAFC; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #F1F5F9; }
+    ::-webkit-scrollbar-thumb { background: #94A3B8; border-radius: 3px; }
+    .sidebar-nav-item { transition: background 0.15s, color 0.15s; }
+    .card-hover { transition: box-shadow 0.15s, transform 0.15s; }
+    .card-hover:hover { box-shadow: 0 4px 20px rgba(27,58,92,0.12); transform: translateY(-1px); }
+    .phase-connector { flex: 1; height: 2px; background: #E2E8F0; margin: 0 4px; align-self: center; margin-top: -20px; }
+    .phase-connector.done { background: #0D9488; }
+    .badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 10px; border-radius: 9999px; font-size: 11px; font-weight: 600; letter-spacing: 0.03em; }
+    .progress-bar { height: 6px; border-radius: 3px; background: #E2E8F0; overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 3px; transition: width 0.4s ease; }
+    .bar-chart-bar { transition: height 0.4s ease; }
+    .tooltip { position: relative; }
+    .tooltip:hover::after { content: attr(data-tip); position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); background: #1E293B; color: #fff; font-size: 11px; padding: 4px 8px; border-radius: 4px; white-space: nowrap; z-index: 50; }
+    .toggle { position: relative; width: 40px; height: 22px; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider { position: absolute; inset: 0; background: #CBD5E1; border-radius: 11px; cursor: pointer; transition: 0.3s; }
+    .toggle-slider:before { content: ''; position: absolute; width: 16px; height: 16px; left: 3px; top: 3px; background: white; border-radius: 50%; transition: 0.3s; }
+    input:checked + .toggle-slider { background: #0D9488; }
+    input:checked + .toggle-slider:before { transform: translateX(18px); }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .fade-in { animation: fadeIn 0.2s ease forwards; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+
+// ─────────────────────────────────────────────
+// ICONS (inline SVG)
+// ─────────────────────────────────────────────
+const Icon = ({ name, size = 18, className = '' }) => {
+  const paths = {
+    home: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6',
+    folder: 'M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z',
+    code: 'M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4',
+    users: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z',
+    chart: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z',
+    shield: 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z',
+    settings: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z',
+    bell: 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9',
+    search: 'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z',
+    plus: 'M12 4v16m8-8H4',
+    check: 'M5 13l4 4L19 7',
+    x: 'M6 18L18 6M6 6l12 12',
+    chevronDown: 'M19 9l-7 7-7-7',
+    chevronRight: 'M9 5l7 7-7 7',
+    cpu: 'M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18',
+    terminal: 'M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z',
+    cloud: 'M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z',
+    zap: 'M13 10V3L4 14h7v7l9-11h-7z',
+    dollar: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
+    activity: 'M22 12h-4l-3 9L9 3l-3 9H2',
+    gitBranch: 'M6 3v12m0 0a3 3 0 100 6 3 3 0 000-6zm0 0a9 9 0 0010.18-5.785M18 3a3 3 0 100 6 3 3 0 000-6zm0 0v6.5',
+    lock: 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z',
+    eye: 'M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z',
+    externalLink: 'M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14',
+    refresh: 'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15',
+    info: 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
+    package: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4',
+    layers: 'M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5',
+    book: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253',
+    robot: 'M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z',
+  };
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d={paths[name] || paths.info} />
+    </svg>
+  );
+};
+
+// ─────────────────────────────────────────────
+// MOCK DATA
+// ─────────────────────────────────────────────
+const ROLES = ['Project Manager', 'Business Analyst', 'Developer', 'Product Owner', 'Leadership', 'CoE Admin'];
+
+const PROJECTS = [
+  { id: 'p1', name: 'Customer 360 Portal', phase: 4, team: 'Team Orion', aiCost: 4210, budget: 8000, lastActivity: '2 hours ago', status: 'on-track', desc: 'Unified customer data platform with real-time analytics and self-service portal', epic: 'Data Platform', stories: 24, done: 17 },
+  { id: 'p2', name: 'Claims Automation Engine', phase: 5, team: 'Team Apollo', aiCost: 6840, budget: 10000, lastActivity: '45 min ago', status: 'on-track', desc: 'AI-driven claims processing with automated triage and adjudication', epic: 'Operations', stories: 31, done: 28 },
+  { id: 'p3', name: 'Dev Onboarding Accelerator', phase: 2, team: 'Team Nova', aiCost: 890, budget: 5000, lastActivity: '1 day ago', status: 'at-risk', desc: 'AI-guided onboarding for new developers with personalized learning paths', epic: 'Internal Tools', stories: 18, done: 6 },
+  { id: 'p4', name: 'Compliance Reporting Suite', phase: 3, team: 'Team Atlas', aiCost: 2150, budget: 6000, lastActivity: '3 hours ago', status: 'on-track', desc: 'Automated regulatory reporting with AI-assisted audit trail generation', epic: 'Compliance', stories: 22, done: 11 },
+  { id: 'p5', name: 'Product Analytics Dashboard', phase: 1, team: 'Team Vega', aiCost: 310, budget: 4000, lastActivity: '5 hours ago', status: 'on-track', desc: 'Real-time product usage analytics with AI-generated insights', epic: 'Analytics', stories: 0, done: 0 },
+];
+
+const USERS = [
+  { id: 'u1', name: 'Priya Sharma', role: 'Developer', team: 'Team Orion', tokensUsed: 142000, budget: 200000, status: 'active' },
+  { id: 'u2', name: 'Marcus Chen', role: 'Business Analyst', team: 'Team Apollo', tokensUsed: 88000, budget: 120000, status: 'active' },
+  { id: 'u3', name: 'Jordan Wells', role: 'Developer', team: 'Team Nova', tokensUsed: 195000, budget: 200000, status: 'active' },
+  { id: 'u4', name: 'Aisha Okonkwo', role: 'Product Owner', team: 'Team Atlas', tokensUsed: 45000, budget: 80000, status: 'active' },
+  { id: 'u5', name: 'Tom Reeves', role: 'Project Manager', team: 'Team Vega', tokensUsed: 22000, budget: 60000, status: 'active' },
+  { id: 'u6', name: 'Lin Nakamura', role: 'Developer', team: 'Team Orion', tokensUsed: 178000, budget: 200000, status: 'active' },
+  { id: 'u7', name: 'Sarah Park', role: 'Developer', team: 'Team Apollo', tokensUsed: 203000, budget: 200000, status: 'warning' },
+];
+
+const PHASES = ['Ideation & Charter','Requirements & Analysis','Design & Prototyping','Implementation','Testing & QA','Deployment & Ops'];
+const PHASE_MODELS = ['GPT-4o','Claude Sonnet','Claude Sonnet','Claude Opus (Code)','Claude Sonnet','GPT-4o-mini'];
+const PHASE_TOOLS = ['Brainstorming wizard','Requirements AI','Vibe coding tools','Claude Code CLI','Test gen AI','Release automation'];
+
+const STORIES = [
+  { id: 's1', title: 'As a customer, I can view my full interaction history in a single timeline', points: 5, status: 'done', assignee: 'Priya S.' },
+  { id: 's2', title: 'As an agent, I can filter customers by segment and lifetime value', points: 3, status: 'done', assignee: 'Lin N.' },
+  { id: 's3', title: 'As a manager, I can export customer data as CSV with custom field selection', points: 8, status: 'in-progress', assignee: 'Priya S.' },
+  { id: 's4', title: 'As a customer, I can update my communication preferences in real time', points: 5, status: 'in-progress', assignee: 'Jordan W.' },
+  { id: 's5', title: 'As an agent, I can see AI-suggested next best actions for each customer', points: 13, status: 'todo', assignee: 'Unassigned' },
+  { id: 's6', title: 'As a customer, I can submit a support request directly from my profile page', points: 3, status: 'todo', assignee: 'Unassigned' },
+];
+
+const ACTIVITY = [
+  { type: 'code', text: 'Claude Code generated CustomerProfileAPI controller', project: 'Customer 360', time: '10 min ago', model: 'Claude Opus' },
+  { type: 'test', text: '14 unit tests generated for ClaimsService', project: 'Claims Automation', time: '42 min ago', model: 'Claude Sonnet' },
+  { type: 'story', text: '6 user stories created from requirements doc', project: 'Dev Onboarding', time: '1 hr ago', model: 'Claude Sonnet' },
+  { type: 'review', text: 'PR #187 reviewed — 3 suggestions added', project: 'Claims Automation', time: '2 hrs ago', model: 'GPT-4o' },
+  { type: 'design', text: 'Prototype wireframes generated from user journey', project: 'Compliance Suite', time: '3 hrs ago', model: 'Claude Sonnet' },
+  { type: 'code', text: 'ReportingEngine class refactored — 40% complexity reduction', project: 'Compliance Suite', time: '4 hrs ago', model: 'Claude Opus' },
+];
+
+const SANDBOXES = [
+  { id: 'sb1', name: 'customer360-feature/profile-api', type: 'Codespaces', status: 'running', tokensUsed: 18400, budget: 30000, started: '2h ago', branch: 'feature/profile-api' },
+  { id: 'sb2', name: 'claims-automation-tests', type: 'Dev Box', status: 'idle', tokensUsed: 5200, budget: 30000, started: '1d ago', branch: 'main' },
+  { id: 'sb3', name: 'compliance-ui-v2', type: 'Local + Claude Code', status: 'stopped', tokensUsed: 31200, budget: 30000, started: '3d ago', branch: 'feature/ui-v2' },
+];
+
+const COST_TREND = [28.4, 34.1, 41.2, 38.8, 52.3, 61.4, 58.9, 67.2, 71.8, 69.3, 78.5, 82.1];
+const MONTHS = ['Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar'];
+
+const MODEL_USAGE = [
+  { model: 'Claude Opus', pct: 28, cost: 23040, color: '#1B3A5C' },
+  { model: 'Claude Sonnet', pct: 35, cost: 28770, color: '#0D9488' },
+  { model: 'GPT-4o', pct: 22, cost: 18090, color: '#2D6A9F' },
+  { model: 'Claude Haiku', pct: 9, cost: 7400, color: '#14B8A6' },
+  { model: 'GPT-4o-mini', pct: 6, cost: 4930, color: '#94A3B8' },
+];
+
+const TOOLS_CONFIG = [
+  { phase: 'Ideation & Charter', enabled: ['GPT-4o', 'Claude Sonnet'], disabled: ['Claude Opus', 'GPT-4o-mini'] },
+  { phase: 'Requirements & Analysis', enabled: ['Claude Sonnet', 'GPT-4o'], disabled: ['Claude Opus'] },
+  { phase: 'Design & Prototyping', enabled: ['Claude Sonnet', 'GPT-4o'], disabled: ['Claude Opus'] },
+  { phase: 'Implementation', enabled: ['Claude Opus', 'Claude Sonnet', 'GitHub Copilot'], disabled: ['GPT-4o-mini'] },
+  { phase: 'Testing & QA', enabled: ['Claude Sonnet', 'Claude Haiku'], disabled: ['Claude Opus'] },
+  { phase: 'Deployment & Ops', enabled: ['GPT-4o-mini', 'Claude Haiku'], disabled: ['Claude Opus', 'GPT-4o'] },
+];
+
+// ─────────────────────────────────────────────
+// SHARED UI COMPONENTS
+// ─────────────────────────────────────────────
+const Badge = ({ children, color = 'gray' }) => {
+  const colors = {
+    green: 'bg-emerald-100 text-emerald-700',
+    yellow: 'bg-amber-100 text-amber-700',
+    red: 'bg-red-100 text-red-700',
+    blue: 'bg-blue-100 text-blue-700',
+    teal: 'bg-teal-100 text-teal-700',
+    navy: 'bg-navy-100 text-navy-600',
+    gray: 'bg-slate-100 text-slate-600',
+    purple: 'bg-purple-100 text-purple-700',
+  };
+  return <span className={`badge ${colors[color]}`}>{children}</span>;
+};
+
+const StatusBadge = ({ status }) => {
+  if (status === 'on-track') return <Badge color="green">● On Track</Badge>;
+  if (status === 'at-risk') return <Badge color="yellow">● At Risk</Badge>;
+  if (status === 'blocked') return <Badge color="red">● Blocked</Badge>;
+  if (status === 'running') return <Badge color="teal">● Running</Badge>;
+  if (status === 'idle') return <Badge color="yellow">● Idle</Badge>;
+  if (status === 'stopped') return <Badge color="gray">● Stopped</Badge>;
+  if (status === 'active') return <Badge color="green">Active</Badge>;
+  if (status === 'warning') return <Badge color="yellow">Near Limit</Badge>;
+  return <Badge>{status}</Badge>;
+};
+
+const PhaseBadge = ({ phase }) => {
+  const colors = ['blue','teal','purple','red','yellow','green'];
+  return <Badge color={colors[phase-1] || 'gray'}>Phase {phase}: {PHASES[phase-1]}</Badge>;
+};
+
+const Card = ({ children, className = '', onClick }) => (
+  <div className={`bg-white rounded-xl border border-slate-200 ${onClick ? 'cursor-pointer card-hover' : ''} ${className}`}
+    onClick={onClick}>{children}</div>
+);
+
+const StatCard = ({ icon, label, value, sub, color = 'teal' }) => (
+  <Card className="p-5">
+    <div className="flex items-start justify-between">
+      <div>
+        <p className="text-xs text-slate-500 font-medium uppercase tracking-wide mb-1">{label}</p>
+        <p className="text-2xl font-bold text-navy-600">{value}</p>
+        {sub && <p className="text-xs text-slate-400 mt-1">{sub}</p>}
+      </div>
+      <div className={`p-2.5 rounded-lg bg-${color}-50`}>
+        <Icon name={icon} size={20} className={`text-${color}-500`} />
+      </div>
+    </div>
+  </Card>
+);
+
+const Button = ({ children, variant = 'primary', size = 'md', onClick, className = '', icon }) => {
+  const base = 'inline-flex items-center gap-2 font-medium rounded-lg transition-all duration-150 cursor-pointer';
+  const variants = {
+    primary: 'bg-teal-500 text-white hover:bg-teal-600 shadow-sm',
+    secondary: 'bg-white text-navy-600 border border-slate-200 hover:bg-slate-50',
+    navy: 'bg-navy-600 text-white hover:bg-navy-700 shadow-sm',
+    ghost: 'text-slate-500 hover:bg-slate-100',
+    danger: 'bg-red-500 text-white hover:bg-red-600',
+  };
+  const sizes = { sm: 'px-3 py-1.5 text-xs', md: 'px-4 py-2 text-sm', lg: 'px-5 py-2.5 text-sm' };
+  return (
+    <button className={`${base} ${variants[variant]} ${sizes[size]} ${className}`} onClick={onClick}>
+      {icon && <Icon name={icon} size={size === 'sm' ? 14 : 16} />}
+      {children}
+    </button>
+  );
+};
+
+const ProgressBar = ({ value, max, color = 'teal' }) => {
+  const pct = Math.min(100, Math.round((value / max) * 100));
+  const colorMap = { teal: 'bg-teal-500', blue: 'bg-blue-500', red: 'bg-red-500', amber: 'bg-amber-500', navy: 'bg-navy-600' };
+  const bgColor = pct > 90 ? 'bg-red-500' : pct > 70 ? 'bg-amber-500' : colorMap[color];
+  return (
+    <div className="progress-bar w-full">
+      <div className={`progress-fill ${bgColor}`} style={{ width: `${pct}%` }} />
+    </div>
+  );
+};
+
+const SectionHeader = ({ title, subtitle, action }) => (
+  <div className="flex items-start justify-between mb-5">
+    <div>
+      <h2 className="text-lg font-semibold text-navy-600">{title}</h2>
+      {subtitle && <p className="text-sm text-slate-400 mt-0.5">{subtitle}</p>}
+    </div>
+    {action}
+  </div>
+);
+
+const ModelTag = ({ model }) => {
+  const colors = {
+    'Claude Opus': 'bg-navy-100 text-navy-600',
+    'Claude Sonnet': 'bg-teal-100 text-teal-700',
+    'Claude Haiku': 'bg-teal-50 text-teal-600',
+    'GPT-4o': 'bg-blue-100 text-blue-700',
+    'GPT-4o-mini': 'bg-slate-100 text-slate-600',
+    'o1': 'bg-purple-100 text-purple-700',
+    'GitHub Copilot': 'bg-indigo-100 text-indigo-700',
+  };
+  return <span className={`badge ${colors[model] || 'bg-slate-100 text-slate-600'}`}>{model}</span>;
+};
+
+// ─────────────────────────────────────────────
+// LIFECYCLE STEPPER
+// ─────────────────────────────────────────────
+const LifecycleStepper = ({ current, compact }) => (
+  <div className={`flex items-start ${compact ? 'gap-0' : 'gap-0'}`}>
+    {PHASES.map((phase, i) => {
+      const num = i + 1;
+      const isDone = num < current;
+      const isActive = num === current;
+      const isFuture = num > current;
+      return (
+        <React.Fragment key={i}>
+          <div className={`flex flex-col items-center ${compact ? 'min-w-[60px]' : 'min-w-[100px]'}`}>
+            <div className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm border-2 transition-all
+              ${isDone ? 'bg-teal-500 border-teal-500 text-white' :
+                isActive ? 'bg-navy-600 border-navy-600 text-white ring-4 ring-navy-100' :
+                'bg-white border-slate-200 text-slate-400'}`}>
+              {isDone ? <Icon name="check" size={16} /> : num}
+            </div>
+            {!compact && (
+              <div className="mt-2 text-center">
+                <p className={`text-xs font-medium ${isActive ? 'text-navy-600' : isDone ? 'text-teal-600' : 'text-slate-400'}`}>
+                  {phase.split(' & ')[0]}
+                </p>
+                {isActive && <p className="text-xs text-teal-500 mt-0.5">{PHASE_MODELS[i]}</p>}
+              </div>
+            )}
+          </div>
+          {i < PHASES.length - 1 && (
+            <div className={`phase-connector mt-4 ${isDone ? 'done' : ''}`} />
+          )}
+        </React.Fragment>
+      );
+    })}
+  </div>
+);
+
+// ─────────────────────────────────────────────
+// MINI CHART (SVG-based)
+// ─────────────────────────────────────────────
+const SparkLine = ({ data, color = '#0D9488', height = 40, width = 120 }) => {
+  const max = Math.max(...data);
+  const min = Math.min(...data);
+  const range = max - min || 1;
+  const pts = data.map((v, i) => {
+    const x = (i / (data.length - 1)) * width;
+    const y = height - ((v - min) / range) * height;
+    return `${x},${y}`;
+  });
+  return (
+    <svg viewBox={`0 0 ${width} ${height}`} width={width} height={height}>
+      <polyline points={pts.join(' ')} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+    </svg>
+  );
+};
+
+const BarChart = ({ data, height = 120 }) => {
+  const max = Math.max(...data.map(d => d.value));
+  return (
+    <div className="flex items-end gap-1" style={{ height }}>
+      {data.map((d, i) => (
+        <div key={i} className="flex flex-col items-center flex-1 gap-1">
+          <div className="w-full rounded-t flex flex-col justify-end" style={{ height: height - 20, position: 'relative' }}>
+            <div className="bar-chart-bar rounded-t w-full" style={{
+              height: `${(d.value / max) * 100}%`, background: d.active ? '#0D9488' : '#E2E8F0'
+            }} />
+          </div>
+          <span className="text-xs text-slate-400" style={{ fontSize: 9 }}>{d.label}</span>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const DonutSlice = ({ pct, color, offset }) => {
+  const r = 40, cx = 50, cy = 50;
+  const circ = 2 * Math.PI * r;
+  return (
+    <circle cx={cx} cy={cy} r={r} fill="none" stroke={color} strokeWidth="18"
+      strokeDasharray={`${pct / 100 * circ} ${circ}`}
+      strokeDashoffset={-offset / 100 * circ}
+      transform="rotate(-90 50 50)" />
+  );
+};
+
+const DonutChart = ({ data }) => {
+  let offset = 0;
+  return (
+    <div className="flex items-center gap-6">
+      <svg viewBox="0 0 100 100" width="100" height="100" className="flex-shrink-0">
+        {data.map((d, i) => {
+          const slice = <DonutSlice key={i} pct={d.pct} color={d.color} offset={offset} />;
+          offset += d.pct;
+          return slice;
+        })}
+      </svg>
+      <div className="flex flex-col gap-1.5 flex-1">
+        {data.map((d, i) => (
+          <div key={i} className="flex items-center gap-2">
+            <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: d.color }} />
+            <span className="text-xs text-slate-600 flex-1">{d.model}</span>
+            <span className="text-xs font-semibold text-navy-600">{d.pct}%</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────
+// PAGE: DASHBOARD
+// ─────────────────────────────────────────────
+const DashboardPage = ({ role, onNavigate }) => {
+  const topProjects = PROJECTS.slice(0, 4);
+  return (
+    <div className="fade-in space-y-6">
+      {/* Welcome */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-navy-600">Good morning, Alex 👋</h1>
+          <p className="text-slate-400 text-sm mt-0.5">You're viewing as <span className="text-teal-600 font-medium">{role}</span> · March 18, 2026</p>
+        </div>
+        <Button variant="navy" icon="plus" onClick={() => onNavigate('projects')}>New Project</Button>
+      </div>
+
+      {/* Stats row */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard icon="folder" label="Active Projects" value="5" sub="2 phases ahead of plan" />
+        <StatCard icon="robot" label="AI Tasks Today" value="47" sub="↑ 12 from yesterday" />
+        <StatCard icon="dollar" label="AI Spend This Month" value="$14,400" sub="of $25,000 budget" />
+        <StatCard icon="users" label="Active Developers" value="31" sub="across 5 teams" />
+      </div>
+
+      <div className="grid grid-cols-3 gap-5">
+        {/* Projects */}
+        <div className="col-span-2">
+          <SectionHeader title="Active Projects" subtitle="Click a project to view lifecycle details"
+            action={<Button variant="ghost" size="sm" onClick={() => onNavigate('projects')}>View all →</Button>} />
+          <div className="space-y-3">
+            {topProjects.map(p => (
+              <Card key={p.id} className="p-4" onClick={() => onNavigate('lifecycle', p)}>
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-semibold text-navy-600 text-sm truncate">{p.name}</span>
+                      <StatusBadge status={p.status} />
+                    </div>
+                    <p className="text-xs text-slate-400 mb-2">{p.team} · Last activity {p.lastActivity}</p>
+                    <LifecycleStepper current={p.phase} compact />
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <p className="text-xs text-slate-400">AI Cost</p>
+                    <p className="text-sm font-bold text-navy-600">${p.aiCost.toLocaleString()}</p>
+                    <div className="mt-1 w-24">
+                      <ProgressBar value={p.aiCost} max={p.budget} />
+                    </div>
+                    <p className="text-xs text-slate-300 mt-0.5">{Math.round(p.aiCost/p.budget*100)}% of budget</p>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+
+        {/* Right column */}
+        <div className="space-y-5">
+          {/* AI Activity Feed */}
+          <Card className="p-4">
+            <SectionHeader title="AI Activity" subtitle="Live feed" />
+            <div className="space-y-3">
+              {ACTIVITY.slice(0, 5).map((a, i) => (
+                <div key={i} className="flex gap-3 items-start">
+                  <div className="w-7 h-7 rounded-full bg-teal-50 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Icon name={a.type === 'code' ? 'terminal' : a.type === 'test' ? 'check' : a.type === 'review' ? 'eye' : 'zap'} size={13} className="text-teal-500" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs text-slate-700 leading-tight">{a.text}</p>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <span className="text-xs text-slate-400">{a.time}</span>
+                      <span className="text-slate-200">·</span>
+                      <ModelTag model={a.model} />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          {/* Quick actions */}
+          <Card className="p-4">
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Quick Actions</p>
+            <div className="space-y-2">
+              {role === 'Developer' && <>
+                <Button variant="secondary" className="w-full justify-start" icon="terminal" onClick={() => onNavigate('workspace')}>Launch Dev Sandbox</Button>
+                <Button variant="secondary" className="w-full justify-start" icon="gitBranch" onClick={() => onNavigate('workspace')}>Open Claude Code</Button>
+              </>}
+              {role === 'Business Analyst' && <>
+                <Button variant="secondary" className="w-full justify-start" icon="book" onClick={() => onNavigate('requirements')}>Write Requirements</Button>
+                <Button variant="secondary" className="w-full justify-start" icon="zap" onClick={() => onNavigate('requirements')}>Generate User Stories</Button>
+              </>}
+              {role === 'Project Manager' && <>
+                <Button variant="secondary" className="w-full justify-start" icon="folder" onClick={() => onNavigate('projects')}>View All Projects</Button>
+                <Button variant="secondary" className="w-full justify-start" icon="chart" onClick={() => onNavigate('analytics')}>Cost Report</Button>
+              </>}
+              {role === 'Product Owner' && <>
+                <Button variant="secondary" className="w-full justify-start" icon="layers" onClick={() => onNavigate('lifecycle')}>Review Backlog</Button>
+                <Button variant="secondary" className="w-full justify-start" icon="check" onClick={() => onNavigate('lifecycle')}>Accept Deliverables</Button>
+              </>}
+              {(role === 'Leadership' || role === 'CoE Admin') && <>
+                <Button variant="secondary" className="w-full justify-start" icon="chart" onClick={() => onNavigate('analytics')}>Usage Dashboard</Button>
+                <Button variant="secondary" className="w-full justify-start" icon="shield" onClick={() => onNavigate('admin')}>Admin Console</Button>
+              </>}
+              <Button variant="secondary" className="w-full justify-start" icon="robot">Ask AI Assistant</Button>
+            </div>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────
+// PAGE: PROJECTS LIST
+// ─────────────────────────────────────────────
+const ProjectsPage = ({ onNavigate }) => {
+  const [search, setSearch] = React.useState('');
+  const filtered = PROJECTS.filter(p =>
+    p.name.toLowerCase().includes(search.toLowerCase()) ||
+    p.team.toLowerCase().includes(search.toLowerCase())
+  );
+  return (
+    <div className="fade-in space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-navy-600">Projects</h1>
+        <Button variant="navy" icon="plus">New Project</Button>
+      </div>
+
+      {/* Search + filters */}
+      <div className="flex gap-3">
+        <div className="relative flex-1 max-w-sm">
+          <Icon name="search" size={16} className="absolute left-3 top-2.5 text-slate-400" />
+          <input className="pl-9 pr-3 py-2 w-full text-sm border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-teal-200 focus:border-teal-400"
+            placeholder="Search projects…" value={search} onChange={e => setSearch(e.target.value)} />
+        </div>
+        <Button variant="secondary" size="md">All Phases ▾</Button>
+        <Button variant="secondary" size="md">All Teams ▾</Button>
+      </div>
+
+      {/* Project cards */}
+      <div className="space-y-4">
+        {filtered.map(p => (
+          <Card key={p.id} className="p-5 cursor-pointer card-hover" onClick={() => onNavigate('lifecycle', p)}>
+            <div className="flex gap-6 items-start">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap mb-1">
+                  <h3 className="font-semibold text-navy-600">{p.name}</h3>
+                  <StatusBadge status={p.status} />
+                  <Badge color="gray">{p.team}</Badge>
+                  <Badge color="blue">{p.epic}</Badge>
+                </div>
+                <p className="text-sm text-slate-400 mb-4">{p.desc}</p>
+                <LifecycleStepper current={p.phase} />
+              </div>
+              <div className="flex-shrink-0 grid grid-cols-2 gap-4 text-right min-w-[200px]">
+                <div>
+                  <p className="text-xs text-slate-400">Stories</p>
+                  <p className="text-lg font-bold text-navy-600">{p.done}/{p.stories || '—'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-400">AI Cost</p>
+                  <p className="text-lg font-bold text-navy-600">${p.aiCost.toLocaleString()}</p>
+                </div>
+                <div className="col-span-2">
+                  <div className="flex justify-between text-xs text-slate-400 mb-1">
+                    <span>Budget</span><span>{Math.round(p.aiCost/p.budget*100)}%</span>
+                  </div>
+                  <ProgressBar value={p.aiCost} max={p.budget} />
+                </div>
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────
+// PAGE: LIFECYCLE / PROJECT DETAIL
+// ─────────────────────────────────────────────
+const LifecyclePage = ({ project: initProject }) => {
+  const project = initProject || PROJECTS[0];
+  const currentPhaseIndex = project.phase - 1;
+  const [activeTab, setActiveTab] = React.useState('stories');
+
+  return (
+    <div className="fade-in space-y-6">
+      {/* Header */}
+      <div className="flex items-start justify-between">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <h1 className="text-2xl font-bold text-navy-600">{project.name}</h1>
+            <StatusBadge status={project.status} />
+          </div>
+          <p className="text-slate-400 text-sm">{project.team} · {project.desc}</p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="secondary" icon="gitBranch">Azure DevOps</Button>
+          <Button variant="navy" icon="robot">Ask AI</Button>
+        </div>
+      </div>
+
+      {/* Lifecycle stepper */}
+      <Card className="p-6">
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-base font-semibold text-navy-600">Development Lifecycle</h2>
+          <PhaseBadge phase={project.phase} />
+        </div>
+        <LifecycleStepper current={project.phase} />
+
+        {/* Current phase info */}
+        <div className="mt-6 p-4 bg-navy-50 rounded-xl flex items-start gap-4">
+          <div className="w-10 h-10 bg-navy-600 rounded-lg flex items-center justify-center flex-shrink-0">
+            <Icon name="robot" size={20} className="text-white" />
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-1">
+              <p className="font-semibold text-navy-600">Current Phase: {PHASES[currentPhaseIndex]}</p>
+              <ModelTag model={PHASE_MODELS[currentPhaseIndex]} />
+            </div>
+            <p className="text-sm text-slate-500">AI Tool: <span className="font-medium text-teal-600">{PHASE_TOOLS[currentPhaseIndex]}</span></p>
+            <p className="text-xs text-slate-400 mt-1">The AI router has selected <strong>{PHASE_MODELS[currentPhaseIndex]}</strong> for this phase based on task complexity and cost optimization rules.</p>
+          </div>
+          <Button variant="teal" size="sm" icon="zap" className="bg-teal-500 text-white hover:bg-teal-600">Launch AI Tool</Button>
+        </div>
+      </Card>
+
+      {/* Tabs */}
+      <div className="flex gap-1 bg-slate-100 p-1 rounded-lg w-fit">
+        {['stories','activity','ai-log'].map(tab => (
+          <button key={tab} onClick={() => setActiveTab(tab)}
+            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all
+              ${activeTab === tab ? 'bg-white text-navy-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+            {tab === 'stories' ? 'User Stories' : tab === 'activity' ? 'Activity' : 'AI Log'}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'stories' && (
+        <Card>
+          <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+            <p className="font-semibold text-navy-600 text-sm">User Stories</p>
+            <Button variant="secondary" size="sm" icon="zap">Generate with AI</Button>
+          </div>
+          <div className="divide-y divide-slate-50">
+            {STORIES.map(s => (
+              <div key={s.id} className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50">
+                <div className={`w-2 h-2 rounded-full flex-shrink-0 ${s.status === 'done' ? 'bg-teal-400' : s.status === 'in-progress' ? 'bg-amber-400' : 'bg-slate-200'}`} />
+                <div className="flex-1 min-w-0">
+                  <p className={`text-sm ${s.status === 'done' ? 'line-through text-slate-400' : 'text-slate-700'}`}>{s.title}</p>
+                  <p className="text-xs text-slate-400 mt-0.5">{s.assignee}</p>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <Badge color={s.status === 'done' ? 'green' : s.status === 'in-progress' ? 'yellow' : 'gray'}>
+                    {s.status === 'done' ? 'Done' : s.status === 'in-progress' ? 'In Progress' : 'To Do'}
+                  </Badge>
+                  <span className="text-xs font-medium text-slate-400">{s.points} pts</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {activeTab === 'activity' && (
+        <Card className="divide-y divide-slate-50">
+          {ACTIVITY.map((a, i) => (
+            <div key={i} className="flex items-start gap-3 p-4 hover:bg-slate-50">
+              <div className="w-8 h-8 bg-teal-50 rounded-full flex items-center justify-center flex-shrink-0">
+                <Icon name="robot" size={14} className="text-teal-500" />
+              </div>
+              <div>
+                <p className="text-sm text-slate-700">{a.text}</p>
+                <div className="flex gap-2 mt-1">
+                  <span className="text-xs text-slate-400">{a.time}</span>
+                  <ModelTag model={a.model} />
+                </div>
+              </div>
+            </div>
+          ))}
+        </Card>
+      )}
+
+      {activeTab === 'ai-log' && (
+        <Card className="p-4">
+          <div className="bg-slate-900 rounded-lg p-4 font-mono text-xs space-y-1.5">
+            {[
+              { t: '14:22:01', c: 'text-teal-400', m: '[AI Router] Phase=4 → Model=claude-opus-4 (score: 0.94)' },
+              { t: '14:22:01', c: 'text-slate-400', m: '[APIM] Request routed to Microsoft Foundry endpoint' },
+              { t: '14:22:03', c: 'text-green-400', m: '[Response] tokens_in=1842 tokens_out=3210 latency=2.1s' },
+              { t: '14:22:03', c: 'text-slate-400', m: '[Cost] $0.043 attributed to project:p1 team:orion user:u1' },
+              { t: '14:18:45', c: 'text-teal-400', m: '[AI Router] Phase=4 → Model=claude-opus-4 (cache miss)' },
+              { t: '14:18:45', c: 'text-amber-400', m: '[APIM] Token budget 71% consumed (142k/200k)' },
+              { t: '14:18:47', c: 'text-green-400', m: '[Response] tokens_in=921 tokens_out=1840 latency=1.8s' },
+              { t: '13:55:12', c: 'text-teal-400', m: '[AI Router] Phase=4 → Model=claude-sonnet-4 (cache HIT 0.92 similarity)' },
+              { t: '13:55:12', c: 'text-green-400', m: '[Cache] Served from semantic cache — $0.00 cost' },
+            ].map((l, i) => (
+              <div key={i} className="flex gap-3">
+                <span className="text-slate-500 flex-shrink-0">{l.t}</span>
+                <span className={l.c}>{l.m}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────
+// PAGE: DEVELOPER WORKSPACE
+// ─────────────────────────────────────────────
+const WorkspacePage = () => {
+  const [launching, setLaunching] = React.useState(null);
+  const launch = (id) => { setLaunching(id); setTimeout(() => setLaunching(null), 2000); };
+
+  const envs = [
+    { id: 'codespaces', icon: 'cloud', name: 'GitHub Codespaces', desc: 'Browser-based VS Code with full AI stack pre-configured', tag: 'Recommended', color: 'teal' },
+    { id: 'devbox', icon: 'cpu', name: 'Azure Dev Box', desc: 'Full cloud workstation with GPU support for heavy builds', tag: 'Full Power', color: 'blue' },
+    { id: 'local', icon: 'terminal', name: 'Local + Claude Code', desc: 'Configure your local IDE with AI APIs and MCP server', tag: 'CLI', color: 'navy' },
+  ];
+
+  return (
+    <div className="fade-in space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-navy-600">Developer Workspace</h1>
+        <div className="flex gap-2">
+          <Button variant="secondary" icon="settings" size="sm">MCP Config</Button>
+          <Button variant="navy" icon="plus" size="sm">New Sandbox</Button>
+        </div>
+      </div>
+
+      {/* Token budget banner */}
+      <div className="bg-navy-600 rounded-xl p-4 text-white flex items-center gap-4">
+        <div className="flex-1">
+          <p className="text-xs text-navy-200 mb-1">Your Monthly Token Budget</p>
+          <div className="flex items-baseline gap-3">
+            <span className="text-2xl font-bold">142,000</span>
+            <span className="text-navy-300 text-sm">/ 200,000 tokens used</span>
+          </div>
+          <div className="mt-2 bg-navy-700 rounded-full h-2">
+            <div className="bg-teal-400 h-2 rounded-full" style={{ width: '71%' }} />
+          </div>
+          <p className="text-xs text-navy-300 mt-1">71% used · 29 days remaining this month</p>
+        </div>
+        <div className="text-right">
+          <p className="text-xs text-navy-300">Spend this month</p>
+          <p className="text-xl font-bold text-teal-300">$18.40</p>
+          <Button variant="ghost" size="sm" className="text-navy-300 hover:bg-navy-700 mt-1">Request increase →</Button>
+        </div>
+      </div>
+
+      {/* Environments */}
+      <div>
+        <SectionHeader title="Launch Environment" subtitle="All environments include Claude Code CLI, DevOps MCP, and project APIs" />
+        <div className="grid grid-cols-3 gap-4">
+          {envs.map(e => (
+            <Card key={e.id} className="p-5">
+              <div className="flex items-start justify-between mb-3">
+                <div className={`p-2.5 rounded-lg bg-${e.color === 'navy' ? 'navy' : e.color}-50`}>
+                  <Icon name={e.icon} size={22} className={`text-${e.color === 'navy' ? 'navy-600' : e.color + '-500'}`} />
+                </div>
+                <Badge color={e.color === 'teal' ? 'teal' : e.color === 'blue' ? 'blue' : 'navy'}>{e.tag}</Badge>
+              </div>
+              <h3 className="font-semibold text-navy-600 mb-1">{e.name}</h3>
+              <p className="text-xs text-slate-400 mb-4">{e.desc}</p>
+              <Button variant={launching === e.id ? 'ghost' : 'primary'} className="w-full justify-center" size="sm"
+                onClick={() => launch(e.id)}>
+                {launching === e.id ? '⟳ Launching…' : 'Launch'}
+              </Button>
+            </Card>
+          ))}
+        </div>
+      </div>
+
+      {/* Active Sandboxes */}
+      <div>
+        <SectionHeader title="Your Sandboxes" subtitle="Auto-shutdown after 2h idle" />
+        <Card>
+          <div className="divide-y divide-slate-100">
+            {SANDBOXES.map(sb => (
+              <div key={sb.id} className="flex items-center gap-4 p-4">
+                <div className="w-9 h-9 bg-slate-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <Icon name={sb.type === 'Codespaces' ? 'cloud' : sb.type === 'Dev Box' ? 'cpu' : 'terminal'} size={18} className="text-slate-500" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-navy-600 truncate">{sb.name}</p>
+                  <div className="flex gap-2 mt-0.5">
+                    <span className="text-xs text-slate-400">{sb.type}</span>
+                    <span className="text-slate-200">·</span>
+                    <span className="text-xs text-slate-400">Started {sb.started}</span>
+                    <span className="text-slate-200">·</span>
+                    <span className="text-xs font-mono text-slate-400">{sb.branch}</span>
+                  </div>
+                </div>
+                <div className="text-right w-32">
+                  <div className="flex justify-between text-xs text-slate-400 mb-1">
+                    <span>{(sb.tokensUsed/1000).toFixed(0)}k</span>
+                    <span>{(sb.budget/1000).toFixed(0)}k tkns</span>
+                  </div>
+                  <ProgressBar value={sb.tokensUsed} max={sb.budget} />
+                </div>
+                <StatusBadge status={sb.status} />
+                <div className="flex gap-1">
+                  {sb.status === 'running' && <Button variant="secondary" size="sm">Open</Button>}
+                  {sb.status === 'idle' && <Button variant="secondary" size="sm">Resume</Button>}
+                  {sb.status === 'stopped' && <Button variant="secondary" size="sm">Restart</Button>}
+                  <Button variant="ghost" size="sm"><Icon name="x" size={14} /></Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
+
+      {/* MCP Server status */}
+      <div>
+        <SectionHeader title="MCP Server Connections" subtitle="Active Model Context Protocol integrations" />
+        <div className="grid grid-cols-2 gap-4">
+          {[
+            { name: 'Azure DevOps MCP', status: 'Connected', domains: ['work-items', 'repositories', 'pipelines'], ver: 'v1.2.0' },
+            { name: 'GitHub MCP', status: 'Connected', domains: ['repos', 'issues', 'pull-requests'], ver: 'v0.9.1' },
+            { name: 'Jira MCP', status: 'Not configured', domains: [], ver: null },
+            { name: 'Confluence MCP', status: 'Not configured', domains: [], ver: null },
+          ].map((m, i) => (
+            <Card key={i} className="p-4 flex items-start gap-3">
+              <div className={`w-2.5 h-2.5 rounded-full mt-1.5 flex-shrink-0 ${m.status === 'Connected' ? 'bg-teal-400' : 'bg-slate-300'}`} />
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-medium text-navy-600">{m.name}</p>
+                  {m.ver && <span className="text-xs text-slate-400 font-mono">{m.ver}</span>}
+                </div>
+                <p className="text-xs text-slate-400 mt-0.5">{m.status}</p>
+                {m.domains.length > 0 && (
+                  <div className="flex gap-1 flex-wrap mt-2">
+                    {m.domains.map(d => <Badge key={d} color="gray">{d}</Badge>)}
+                  </div>
+                )}
+              </div>
+              <Button variant={m.status === 'Connected' ? 'ghost' : 'secondary'} size="sm">
+                {m.status === 'Connected' ? 'Config' : 'Connect'}
+              </Button>
+            </Card>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────
+// PAGE: REQUIREMENTS (BA View)
+// ─────────────────────────────────────────────
+const RequirementsPage = () => {
+  const [step, setStep] = React.useState(1);
+  const [generated, setGenerated] = React.useState(false);
+  const [generating, setGenerating] = React.useState(false);
+
+  const generate = () => {
+    setGenerating(true);
+    setTimeout(() => { setGenerating(false); setGenerated(true); }, 1800);
+  };
+
+  const genStories = [
+    { title: 'As a new developer, I can complete account setup with AI-guided steps in under 10 minutes', points: 5, priority: 'High' },
+    { title: 'As a developer, I can access a personalized learning path based on my tech stack and experience level', points: 8, priority: 'High' },
+    { title: 'As a developer, I can view pre-configured IDE templates for my assigned project', points: 3, priority: 'Medium' },
+    { title: 'As a manager, I can track onboarding completion percentage for each team member', points: 5, priority: 'Medium' },
+    { title: 'As a developer, I receive a checklist of required tool installations with one-click automation', points: 3, priority: 'High' },
+  ];
+
+  return (
+    <div className="fade-in space-y-6 max-w-3xl">
+      <h1 className="text-2xl font-bold text-navy-600">Requirements Workspace</h1>
+      <p className="text-slate-400 -mt-4">AI-assisted requirements elicitation and user story generation</p>
+
+      {/* Progress steps */}
+      <div className="flex items-center gap-2">
+        {['Context', 'Requirements', 'Generate Stories', 'Review & Export'].map((s, i) => (
+          <React.Fragment key={i}>
+            <div className={`flex items-center gap-2 cursor-pointer`} onClick={() => setStep(i+1)}>
+              <div className={`w-6 h-6 rounded-full text-xs flex items-center justify-center font-bold
+                ${step > i+1 ? 'bg-teal-500 text-white' : step === i+1 ? 'bg-navy-600 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                {step > i+1 ? '✓' : i+1}
+              </div>
+              <span className={`text-sm ${step === i+1 ? 'text-navy-600 font-medium' : 'text-slate-400'} hidden sm:block`}>{s}</span>
+            </div>
+            {i < 3 && <div className={`flex-1 h-0.5 ${step > i+1 ? 'bg-teal-400' : 'bg-slate-200'}`} />}
+          </React.Fragment>
+        ))}
+      </div>
+
+      {step === 1 && (
+        <Card className="p-6 space-y-4">
+          <h2 className="text-base font-semibold text-navy-600">Project Context</h2>
+          <div>
+            <label className="text-xs font-medium text-slate-600 mb-1.5 block">Project Name</label>
+            <input defaultValue="Dev Onboarding Accelerator" className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-teal-200 focus:border-teal-400 outline-none" />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-slate-600 mb-1.5 block">Goal Statement</label>
+            <textarea className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-teal-200 focus:border-teal-400 outline-none h-24 resize-none"
+              defaultValue="Create an AI-guided onboarding experience that helps new developers become productive in less than one week by providing personalized learning paths, automated environment setup, and project-specific guidance." />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-medium text-slate-600 mb-1.5 block">Primary User Persona</label>
+              <select className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-teal-200 focus:border-teal-400 outline-none">
+                <option>New Developer</option><option>Team Lead</option><option>HR Coordinator</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-slate-600 mb-1.5 block">AI Model</label>
+              <div className="flex items-center gap-2 border border-slate-200 rounded-lg px-3 py-2">
+                <ModelTag model="Claude Sonnet" />
+                <span className="text-xs text-slate-400">(auto-selected)</span>
+              </div>
+            </div>
+          </div>
+          <div className="flex justify-end">
+            <Button variant="navy" onClick={() => setStep(2)}>Continue →</Button>
+          </div>
+        </Card>
+      )}
+
+      {step === 2 && (
+        <Card className="p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-base font-semibold text-navy-600">Requirements</h2>
+            <Button variant="secondary" size="sm" icon="zap">AI: Expand from goal</Button>
+          </div>
+          <div className="space-y-2">
+            {['Developer can set up their development environment with one click', 'Platform provides project-specific tooling configuration', 'AI coach guides developer through first contribution', 'Manager receives progress notifications', 'System integrates with Azure DevOps for task assignment'].map((req, i) => (
+              <div key={i} className="flex items-start gap-2 p-3 bg-slate-50 rounded-lg">
+                <input type="checkbox" defaultChecked className="mt-0.5 accent-teal-500" />
+                <span className="text-sm text-slate-700 flex-1">{req}</span>
+                <Button variant="ghost" size="sm" className="text-slate-300 hover:text-red-400"><Icon name="x" size={14} /></Button>
+              </div>
+            ))}
+          </div>
+          <button className="text-sm text-teal-600 hover:text-teal-700 font-medium flex items-center gap-1">
+            <Icon name="plus" size={14} /> Add requirement
+          </button>
+          <div className="flex justify-between">
+            <Button variant="ghost" onClick={() => setStep(1)}>← Back</Button>
+            <Button variant="navy" onClick={() => setStep(3)}>Continue →</Button>
+          </div>
+        </Card>
+      )}
+
+      {step === 3 && (
+        <Card className="p-6 space-y-4">
+          <h2 className="text-base font-semibold text-navy-600">Generate User Stories</h2>
+          <div className="p-4 bg-navy-50 rounded-xl flex items-center gap-3">
+            <Icon name="robot" size={20} className="text-navy-600 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-navy-600">Claude Sonnet will generate user stories from your requirements</p>
+              <p className="text-xs text-slate-500 mt-0.5">Estimated: 5–8 stories · ~1,200 tokens · $0.002 cost</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-medium text-slate-600 mb-1.5 block">Story Format</label>
+              <select className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-teal-200">
+                <option>As a [user], I can [action] so that [benefit]</option>
+                <option>Given/When/Then (BDD)</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-slate-600 mb-1.5 block">Include</label>
+              <div className="flex gap-3">
+                <label className="flex items-center gap-1.5 text-sm"><input type="checkbox" defaultChecked className="accent-teal-500" /> Acceptance criteria</label>
+                <label className="flex items-center gap-1.5 text-sm"><input type="checkbox" defaultChecked className="accent-teal-500" /> Story points</label>
+              </div>
+            </div>
+          </div>
+          {!generated ? (
+            <Button variant="navy" className="w-full justify-center" icon="zap" onClick={generate}>
+              {generating ? '⟳ Generating with Claude Sonnet…' : 'Generate User Stories'}
+            </Button>
+          ) : (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-teal-600 text-sm font-medium mb-3">
+                <Icon name="check" size={16} /> 5 stories generated in 1.4s · 1,180 tokens · $0.0018
+              </div>
+              {genStories.map((s, i) => (
+                <div key={i} className="p-3 border border-slate-100 rounded-lg hover:border-teal-200 transition-colors">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="text-sm text-slate-700 flex-1">{s.title}</p>
+                    <div className="flex gap-1.5 flex-shrink-0">
+                      <Badge color={s.priority === 'High' ? 'red' : 'yellow'}>{s.priority}</Badge>
+                      <Badge color="gray">{s.points} pts</Badge>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="flex justify-between">
+            <Button variant="ghost" onClick={() => setStep(2)}>← Back</Button>
+            <Button variant="navy" disabled={!generated} onClick={() => setStep(4)}>Review →</Button>
+          </div>
+        </Card>
+      )}
+
+      {step === 4 && (
+        <Card className="p-6 space-y-5">
+          <h2 className="text-base font-semibold text-navy-600">Review & Export</h2>
+          <div className="p-4 bg-teal-50 rounded-xl text-teal-800 text-sm">
+            ✓ 5 user stories ready to export. They will be created as work items in Azure DevOps under <strong>Team Nova / Dev Onboarding Accelerator</strong>.
+          </div>
+          <div className="flex flex-col gap-2">
+            <Button variant="navy" icon="gitBranch" className="w-full justify-center">Push to Azure DevOps Backlog</Button>
+            <Button variant="secondary" icon="package" className="w-full justify-center">Export as Word Document</Button>
+            <Button variant="secondary" icon="externalLink" className="w-full justify-center">Copy Markdown</Button>
+          </div>
+          <Button variant="ghost" onClick={() => setStep(3)}>← Back</Button>
+        </Card>
+      )}
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────
+// PAGE: ANALYTICS (Leadership)
+// ─────────────────────────────────────────────
+const AnalyticsPage = () => {
+  const barData = MONTHS.map((m, i) => ({ label: m, value: COST_TREND[i], active: i === 11 }));
+  const totalSpend = Math.round(COST_TREND.reduce((a,b)=>a+b,0));
+  return (
+    <div className="fade-in space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-navy-600">Usage & Analytics</h1>
+        <div className="flex gap-2">
+          <Button variant="secondary" size="sm">Last 12 months ▾</Button>
+          <Button variant="secondary" size="sm" icon="externalLink">Export PDF</Button>
+        </div>
+      </div>
+
+      {/* KPI row */}
+      <div className="grid grid-cols-4 gap-4">
+        <StatCard icon="dollar" label="Total Spend YTD" value={`$${totalSpend}K`} sub="↑ 34% YoY (adoption growth)" />
+        <StatCard icon="users" label="Active AI Users" value="183" sub="91% of 200+ developers" />
+        <StatCard icon="activity" label="AI Tasks This Month" value="12,480" sub="↑ 18% from last month" />
+        <StatCard icon="zap" label="Cache Hit Rate" value="31%" sub="↓ $4,200 saved in March" color="navy" />
+      </div>
+
+      <div className="grid grid-cols-3 gap-5">
+        {/* Monthly spend chart */}
+        <div className="col-span-2">
+          <Card className="p-5">
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <p className="text-base font-semibold text-navy-600">Monthly AI Spend</p>
+                <p className="text-xs text-slate-400">April 2025 – March 2026 (USD thousands)</p>
+              </div>
+              <span className="text-2xl font-bold text-navy-600">$82.1K <span className="text-sm text-teal-500">↑ 4.6%</span></span>
+            </div>
+            <BarChart data={barData} height={140} />
+          </Card>
+        </div>
+
+        {/* Model mix donut */}
+        <Card className="p-5">
+          <p className="text-base font-semibold text-navy-600 mb-4">Model Mix (March)</p>
+          <DonutChart data={MODEL_USAGE} />
+          <div className="mt-4 pt-3 border-t border-slate-100">
+            <div className="flex justify-between text-xs">
+              <span className="text-slate-400">Total March Spend</span>
+              <span className="font-semibold text-navy-600">$82,230</span>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-2 gap-5">
+        {/* Per-project breakdown */}
+        <Card className="p-5">
+          <SectionHeader title="Cost by Project" />
+          <div className="space-y-3">
+            {PROJECTS.map(p => (
+              <div key={p.id}>
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="text-slate-700 truncate">{p.name}</span>
+                  <span className="font-semibold text-navy-600 flex-shrink-0">${p.aiCost.toLocaleString()}</span>
+                </div>
+                <ProgressBar value={p.aiCost} max={10000} color={p.status === 'at-risk' ? 'amber' : 'teal'} />
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        {/* Team adoption */}
+        <Card className="p-5">
+          <SectionHeader title="Team Adoption" />
+          <div className="space-y-3">
+            {[
+              { team: 'Team Orion', pct: 98, users: 12 },
+              { team: 'Team Apollo', pct: 94, users: 9 },
+              { team: 'Team Atlas', pct: 87, users: 8 },
+              { team: 'Team Nova', pct: 72, users: 6 },
+              { team: 'Team Vega', pct: 61, users: 5 },
+            ].map(t => (
+              <div key={t.team}>
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="text-slate-700">{t.team}</span>
+                  <span className="text-slate-400 text-xs">{t.users} developers · <span className="font-semibold text-teal-600">{t.pct}%</span></span>
+                </div>
+                <ProgressBar value={t.pct} max={100} color="teal" />
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
+
+      {/* Spend forecast */}
+      <Card className="p-5">
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-base font-semibold text-navy-600">Spend Forecast</p>
+            <p className="text-xs text-slate-400 mt-0.5">Based on current trajectory and planned team growth</p>
+          </div>
+          <Badge color="blue">AI-Generated</Badge>
+        </div>
+        <div className="mt-4 grid grid-cols-3 gap-4">
+          {[
+            { label: 'April 2026 (est.)', value: '$88K', change: '+7%', ok: true },
+            { label: 'Q2 2026 (est.)', value: '$265K', change: '+8%', ok: true },
+            { label: 'FY2026 (est.)', value: '$1.02M', change: '+24%', ok: false },
+          ].map(f => (
+            <div key={f.label} className="p-3 bg-slate-50 rounded-lg">
+              <p className="text-xs text-slate-400">{f.label}</p>
+              <p className="text-xl font-bold text-navy-600 mt-1">{f.value}</p>
+              <p className={`text-xs font-medium mt-0.5 ${f.ok ? 'text-teal-500' : 'text-amber-500'}`}>↑ {f.change} YoY</p>
+            </div>
+          ))}
+        </div>
+      </Card>
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────
+// PAGE: ADMIN (CoE)
+// ─────────────────────────────────────────────
+const AdminPage = () => {
+  const [tab, setTab] = React.useState('users');
+  const [toggles, setToggles] = React.useState({ semanticCache: true, promptFilter: true, auditLog: true, autoShutdown: true, budgetAlerts: true });
+
+  const tabs = [
+    { id: 'users', label: 'Users', icon: 'users' },
+    { id: 'models', label: 'Model Routing', icon: 'robot' },
+    { id: 'tools', label: 'Tool Config', icon: 'settings' },
+    { id: 'policies', label: 'Policies', icon: 'shield' },
+  ];
+
+  return (
+    <div className="fade-in space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-navy-600">AI CoE Admin Console</h1>
+        <Button variant="navy" icon="plus">Add User</Button>
+      </div>
+
+      {/* Summary row */}
+      <div className="grid grid-cols-4 gap-4">
+        <StatCard icon="users" label="Total Users" value="183" sub="7 pending invites" />
+        <StatCard icon="dollar" label="Org Monthly Budget" value="$25,000" sub="$14,400 used (58%)" />
+        <StatCard icon="shield" label="Policy Violations" value="0" sub="30-day period" color="navy" />
+        <StatCard icon="robot" label="Active Models" value="6" sub="2 restricted by policy" />
+      </div>
+
+      {/* Tabs */}
+      <div className="flex gap-1 bg-slate-100 p-1 rounded-lg w-fit">
+        {tabs.map(t => (
+          <button key={t.id} onClick={() => setTab(t.id)}
+            className={`flex items-center gap-2 px-4 py-1.5 text-sm font-medium rounded-md transition-all
+              ${tab === t.id ? 'bg-white text-navy-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+            <Icon name={t.icon} size={14} />{t.label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'users' && (
+        <Card>
+          <div className="p-4 border-b border-slate-100 flex items-center gap-3">
+            <div className="relative flex-1 max-w-xs">
+              <Icon name="search" size={14} className="absolute left-3 top-2.5 text-slate-400" />
+              <input className="pl-8 pr-3 py-2 w-full text-sm border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-teal-200"
+                placeholder="Search users…" />
+            </div>
+            <Button variant="secondary" size="sm">All Roles ▾</Button>
+          </div>
+          <div className="divide-y divide-slate-50">
+            <div className="grid grid-cols-5 gap-4 px-4 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wide">
+              <span className="col-span-2">User</span><span>Role / Team</span><span>Token Usage</span><span>Status</span>
+            </div>
+            {USERS.map(u => (
+              <div key={u.id} className="grid grid-cols-5 gap-4 items-center px-4 py-3 hover:bg-slate-50">
+                <div className="col-span-2 flex items-center gap-3">
+                  <div className="w-8 h-8 bg-navy-100 rounded-full flex items-center justify-center text-navy-600 font-semibold text-xs">
+                    {u.name.split(' ').map(n=>n[0]).join('')}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-navy-600">{u.name}</p>
+                    <p className="text-xs text-slate-400">u/{u.id}</p>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-sm text-slate-700">{u.role}</p>
+                  <p className="text-xs text-slate-400">{u.team}</p>
+                </div>
+                <div>
+                  <div className="flex justify-between text-xs text-slate-400 mb-1">
+                    <span>{Math.round(u.tokensUsed/1000)}k</span>
+                    <span>{Math.round(u.budget/1000)}k</span>
+                  </div>
+                  <ProgressBar value={u.tokensUsed} max={u.budget} />
+                </div>
+                <div className="flex items-center gap-2">
+                  <StatusBadge status={u.status} />
+                  <Button variant="ghost" size="sm"><Icon name="settings" size={14} /></Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {tab === 'models' && (
+        <div className="space-y-4">
+          <Card className="p-5">
+            <p className="text-sm font-semibold text-navy-600 mb-4">AI Model Routing Matrix</p>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-100">
+                    <th className="text-left py-2 pr-4 text-xs text-slate-400 font-semibold uppercase">Lifecycle Phase</th>
+                    {['Claude Opus','Claude Sonnet','Claude Haiku','GPT-4o','GPT-4o-mini','o1'].map(m => (
+                      <th key={m} className="text-center py-2 px-2 text-xs text-slate-400 font-semibold uppercase whitespace-nowrap">{m}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    { phase: 'Ideation & Charter', config: [false, true, false, true, true, false] },
+                    { phase: 'Requirements', config: [false, true, false, true, false, false] },
+                    { phase: 'Design & Proto', config: [false, true, false, true, false, false] },
+                    { phase: 'Implementation', config: [true, true, false, false, false, true] },
+                    { phase: 'Testing & QA', config: [false, true, true, false, true, false] },
+                    { phase: 'Deploy & Ops', config: [false, false, true, false, true, false] },
+                  ].map((row, i) => (
+                    <tr key={i} className={`border-b border-slate-50 ${i % 2 === 1 ? 'bg-slate-50' : ''}`}>
+                      <td className="py-3 pr-4 text-slate-700 font-medium text-xs">{row.phase}</td>
+                      {row.config.map((enabled, j) => (
+                        <td key={j} className="text-center py-3 px-2">
+                          <div className={`w-6 h-6 rounded-full mx-auto flex items-center justify-center
+                            ${enabled ? 'bg-teal-100' : 'bg-slate-100'}`}>
+                            {enabled
+                              ? <Icon name="check" size={12} className="text-teal-600" />
+                              : <Icon name="x" size={12} className="text-slate-300" />}
+                          </div>
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="mt-4 flex justify-end">
+              <Button variant="secondary" size="sm" icon="settings">Edit Routing Policy</Button>
+            </div>
+          </Card>
+
+          <Card className="p-5">
+            <p className="text-sm font-semibold text-navy-600 mb-4">Spending Limits by Team</p>
+            <div className="space-y-3">
+              {[
+                { team: 'Team Orion', limit: 200000, used: 142000 },
+                { team: 'Team Apollo', limit: 180000, used: 158000 },
+                { team: 'Team Nova', limit: 150000, used: 82000 },
+                { team: 'Team Atlas', limit: 160000, used: 95000 },
+                { team: 'Team Vega', limit: 120000, used: 43000 },
+              ].map(t => (
+                <div key={t.team} className="flex items-center gap-4">
+                  <span className="text-sm text-slate-700 w-28 flex-shrink-0">{t.team}</span>
+                  <div className="flex-1">
+                    <div className="flex justify-between text-xs text-slate-400 mb-1">
+                      <span>{Math.round(t.used/1000)}k tokens</span>
+                      <span>limit: {Math.round(t.limit/1000)}k</span>
+                    </div>
+                    <ProgressBar value={t.used} max={t.limit} />
+                  </div>
+                  <Button variant="ghost" size="sm" className="flex-shrink-0">Edit</Button>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {tab === 'tools' && (
+        <div className="space-y-3">
+          {TOOLS_CONFIG.map((tc, i) => (
+            <Card key={i} className="p-4">
+              <div className="flex items-center gap-4">
+                <div className="w-6 h-6 bg-navy-600 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">{i+1}</div>
+                <p className="text-sm font-semibold text-navy-600 w-40 flex-shrink-0">{tc.phase}</p>
+                <div className="flex flex-wrap gap-1.5 flex-1">
+                  {tc.enabled.map(m => <ModelTag key={m} model={m} />)}
+                  {tc.disabled.map(m => (
+                    <span key={m} className="badge bg-slate-100 text-slate-300 line-through">{m}</span>
+                  ))}
+                </div>
+                <Button variant="ghost" size="sm">Edit</Button>
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {tab === 'policies' && (
+        <div className="space-y-4">
+          <Card className="p-5">
+            <p className="text-sm font-semibold text-navy-600 mb-4">Platform Policies</p>
+            <div className="space-y-4 divide-y divide-slate-50">
+              {[
+                { key: 'semanticCache', label: 'Semantic Caching', desc: 'Cache AI responses by semantic similarity to reduce redundant API calls' },
+                { key: 'promptFilter', label: 'Prompt Injection Filter', desc: 'Block common prompt injection patterns at the gateway layer' },
+                { key: 'auditLog', label: 'Full Audit Logging', desc: 'Log all AI interactions with user, model, token, and cost metadata' },
+                { key: 'autoShutdown', label: 'Auto-Shutdown Sandboxes', desc: 'Automatically stop idle sandbox environments after 2 hours' },
+                { key: 'budgetAlerts', label: 'Budget Alerts', desc: 'Notify users and managers when spending reaches 80% and 95% of budget' },
+              ].map(p => (
+                <div key={p.key} className="flex items-center justify-between pt-4 first:pt-0">
+                  <div>
+                    <p className="text-sm font-medium text-slate-700">{p.label}</p>
+                    <p className="text-xs text-slate-400 mt-0.5">{p.desc}</p>
+                  </div>
+                  <label className="toggle flex-shrink-0">
+                    <input type="checkbox" checked={toggles[p.key]}
+                      onChange={() => setToggles(t => ({...t, [p.key]: !t[p.key]}))} />
+                    <span className="toggle-slider" />
+                  </label>
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          <Card className="p-5">
+            <p className="text-sm font-semibold text-navy-600 mb-3">Compliance Templates</p>
+            {[
+              { name: 'SOC2 Type II', desc: 'Restricts data storage, enforces audit logging, limits model selection', status: 'Available' },
+              { name: 'HIPAA Safe Harbor', desc: 'Prevents PHI from entering AI prompts; requires on-Azure model routing only', status: 'Available' },
+              { name: 'FedRAMP Moderate', desc: 'Azure Government cloud routing; restricted model list; enhanced logging', status: 'Coming Soon' },
+            ].map(c => (
+              <div key={c.name} className="flex items-center justify-between p-3 hover:bg-slate-50 rounded-lg">
+                <div>
+                  <p className="text-sm font-medium text-slate-700">{c.name}</p>
+                  <p className="text-xs text-slate-400">{c.desc}</p>
+                </div>
+                <Button variant={c.status === 'Coming Soon' ? 'ghost' : 'secondary'} size="sm" disabled={c.status === 'Coming Soon'}>
+                  {c.status === 'Coming Soon' ? 'Soon' : 'Apply'}
+                </Button>
+              </div>
+            ))}
+          </Card>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────
+// SIDEBAR
+// ─────────────────────────────────────────────
+const Sidebar = ({ currentPage, onNavigate, role, onRoleChange, collapsed, onToggle }) => {
+  const navItems = [
+    { id: 'dashboard', icon: 'home', label: 'Dashboard', roles: ['all'] },
+    { id: 'projects', icon: 'folder', label: 'Projects', roles: ['all'] },
+    { id: 'lifecycle', icon: 'layers', label: 'Lifecycle Tracker', roles: ['all'] },
+    { id: 'workspace', icon: 'terminal', label: 'Dev Workspace', roles: ['Developer', 'CoE Admin'] },
+    { id: 'requirements', icon: 'book', label: 'Requirements', roles: ['Business Analyst', 'Product Owner', 'Project Manager', 'CoE Admin'] },
+    { id: 'analytics', icon: 'chart', label: 'Analytics', roles: ['Leadership', 'Project Manager', 'CoE Admin'] },
+    { id: 'admin', icon: 'shield', label: 'Admin Console', roles: ['CoE Admin', 'Leadership'] },
+  ];
+
+  const visible = navItems.filter(n => n.roles.includes('all') || n.roles.includes(role));
+
+  return (
+    <div className={`flex flex-col bg-navy-600 h-screen flex-shrink-0 transition-all duration-200 ${collapsed ? 'w-16' : 'w-60'}`}>
+      {/* Logo */}
+      {collapsed ? (
+        <div className="flex items-center justify-center border-b border-navy-500 h-16">
+          <button className="w-9 h-9 bg-teal-500 rounded-lg flex items-center justify-center text-white hover:bg-teal-400 transition-colors" onClick={onToggle} title="Expand sidebar">
+            <Icon name="chevronRight" size={18} />
+          </button>
+        </div>
+      ) : (
+        <div className="flex items-center gap-3 px-4 border-b border-navy-500 h-16">
+          <div className="w-8 h-8 bg-teal-500 rounded-lg flex items-center justify-center flex-shrink-0">
+            <Icon name="robot" size={16} className="text-white" />
+          </div>
+          <span className="text-white font-bold text-sm leading-tight flex-1">AI Dev<br/>Portal</span>
+          <button className="text-navy-300 hover:text-white transition-colors" onClick={onToggle} title="Collapse sidebar">
+            <Icon name="chevronDown" size={16} />
+          </button>
+        </div>
+      )}
+
+      {/* Role switcher */}
+      {!collapsed && (
+        <div className="px-3 py-3 border-b border-navy-500">
+          <p className="text-xs text-navy-300 mb-1.5 px-1">Viewing as</p>
+          <select className="w-full bg-navy-700 text-white text-xs rounded-lg px-2 py-1.5 border border-navy-500 outline-none cursor-pointer"
+            value={role} onChange={e => onRoleChange(e.target.value)}>
+            {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+          </select>
+        </div>
+      )}
+
+      {/* Nav */}
+      <nav className="flex-1 py-3 overflow-y-auto">
+        {visible.map(item => (
+          <button key={item.id} onClick={() => onNavigate(item.id)}
+            className={`sidebar-nav-item w-full flex items-center gap-3 px-4 py-2.5 text-sm rounded-none
+              ${currentPage === item.id
+                ? 'bg-navy-700 text-white border-l-2 border-teal-400'
+                : 'text-navy-200 hover:bg-navy-700 hover:text-white'}`}>
+            <Icon name={item.icon} size={18} className="flex-shrink-0" />
+            {!collapsed && <span>{item.label}</span>}
+          </button>
+        ))}
+      </nav>
+
+      {/* Bottom */}
+      <div className="p-3 border-t border-navy-500">
+        {!collapsed && (
+          <div className="flex items-center gap-2 px-1 mb-3">
+            <div className="w-7 h-7 bg-teal-500 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">AM</div>
+            <div className="min-w-0">
+              <p className="text-xs text-white font-medium truncate">Alex Morgan</p>
+              <p className="text-xs text-navy-300 truncate">alex.morgan@example.com</p>
+            </div>
+          </div>
+        )}
+        <button className="sidebar-nav-item w-full flex items-center gap-3 px-1 py-2 text-navy-300 hover:text-white text-sm">
+          <Icon name="settings" size={18} />
+          {!collapsed && <span>Settings</span>}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────
+// TOP BAR
+// ─────────────────────────────────────────────
+const TopBar = ({ page, onNavigate }) => {
+  const crumbs = {
+    dashboard: ['Dashboard'],
+    projects: ['Projects'],
+    lifecycle: ['Projects', 'Lifecycle Tracker'],
+    workspace: ['Developer Workspace'],
+    requirements: ['Requirements Workspace'],
+    analytics: ['Analytics'],
+    admin: ['Admin Console'],
+  };
+  const labels = crumbs[page] || ['Dashboard'];
+  return (
+    <div className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 flex-shrink-0">
+      <div className="flex items-center gap-2 text-sm">
+        {labels.map((l, i) => (
+          <React.Fragment key={i}>
+            {i > 0 && <Icon name="chevronRight" size={14} className="text-slate-300" />}
+            <span className={i === labels.length - 1 ? 'font-semibold text-navy-600' : 'text-slate-400'}>{l}</span>
+          </React.Fragment>
+        ))}
+      </div>
+      <div className="flex items-center gap-3">
+        <div className="relative">
+          <Icon name="search" size={16} className="absolute left-3 top-2.5 text-slate-400" />
+          <input className="pl-9 pr-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg w-56 outline-none focus:ring-2 focus:ring-teal-200 focus:border-teal-400" placeholder="Search…" />
+        </div>
+        <button className="relative p-2 rounded-lg hover:bg-slate-100 text-slate-500">
+          <Icon name="bell" size={18} />
+          <span className="absolute top-1 right-1 w-2 h-2 bg-red-400 rounded-full" />
+        </button>
+        <button className="p-2 rounded-lg hover:bg-slate-100 text-slate-500">
+          <Icon name="info" size={18} />
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────
+// APP ROOT
+// ─────────────────────────────────────────────
+const App = () => {
+  const [page, setPage] = React.useState('dashboard');
+  const [role, setRole] = React.useState('Project Manager');
+  const [collapsed, setCollapsed] = React.useState(false);
+  const [selectedProject, setSelectedProject] = React.useState(null);
+
+  const navigate = (p, data) => {
+    setPage(p);
+    if (data) setSelectedProject(data);
+  };
+
+  const roleDefaultPage = {
+    'Developer': 'workspace',
+    'Business Analyst': 'requirements',
+    'Leadership': 'analytics',
+    'CoE Admin': 'admin',
+  };
+
+  const handleRoleChange = (r) => {
+    setRole(r);
+    setPage(roleDefaultPage[r] || 'dashboard');
+  };
+
+  const renderPage = () => {
+    switch (page) {
+      case 'dashboard': return <DashboardPage role={role} onNavigate={navigate} />;
+      case 'projects': return <ProjectsPage onNavigate={navigate} />;
+      case 'lifecycle': return <LifecyclePage project={selectedProject} />;
+      case 'workspace': return <WorkspacePage />;
+      case 'requirements': return <RequirementsPage />;
+      case 'analytics': return <AnalyticsPage />;
+      case 'admin': return <AdminPage />;
+      default: return <DashboardPage role={role} onNavigate={navigate} />;
+    }
+  };
+
+  return (
+    <div className="flex h-screen overflow-hidden">
+      <Sidebar currentPage={page} onNavigate={navigate} role={role}
+        onRoleChange={handleRoleChange} collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)} />
+      <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
+        <TopBar page={page} onNavigate={navigate} />
+        <main className="flex-1 overflow-y-auto p-6">
+          {renderPage()}
+        </main>
+      </div>
+    </div>
+  );
+};
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
